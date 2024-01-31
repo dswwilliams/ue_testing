@@ -9,26 +9,6 @@ from test_utils import calculate_ue_metrics, calculate_miou, calculate_metrics_s
 from device_utils import to_device
 from datasets.val_datasets import ValDataset
 
-
-def segmasks2gammasegmasks(seg_masks, gamma, opt):
-    bs, _, h, w = seg_masks.shape
-    device = seg_masks.device
-    gammas = gamma * torch.ones(bs, 1, h, w).to(device)      # shape: [bs, 1, h, w]
-    gamma_seg_masks = torch.cat((seg_masks, gammas), dim=1)             # shape: [bs, K+1, h, w]
-    return gamma_seg_masks
-
-
-def calculate_mean_stats(n_accurate_and_certain, n_uncertain_and_inaccurate, n_inaccurate_and_certain, n_uncertain_and_accurate):
-    total_sum = n_accurate_and_certain + n_uncertain_and_inaccurate + n_inaccurate_and_certain + n_uncertain_and_accurate
-
-    mean_stats = {}
-    mean_stats["mean_accurate_and_certain"] = n_accurate_and_certain / total_sum
-    mean_stats["mean_uncertain_and_inaccurate"] = n_uncertain_and_inaccurate / total_sum
-    mean_stats["mean_inaccurate_and_certain"] = n_inaccurate_and_certain / total_sum
-    mean_stats["mean_uncertain_and_accurate"] = n_uncertain_and_accurate / total_sum
-    return mean_stats
-
-
 class Tester():
     """
     Base class for all testers and validators
