@@ -128,6 +128,11 @@ class Tester():
         self.device = torch.device(device_id)
 
 
+    def test(self, test_count=0):
+        # validate uncertainty estimation
+        for val_dataset in self.val_datasets:
+            self.validate_uncertainty_estimation(val_dataset, test_count=test_count)
+
 
     @torch.no_grad()
     def validate_uncertainty_estimation(self, val_dataset, test_count=0):
