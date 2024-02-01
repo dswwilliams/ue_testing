@@ -5,8 +5,8 @@ from tqdm import tqdm
 import numpy as np
 import cv2
 from collections import defaultdict
-from test_utils import calculate_ue_metrics, calculate_miou, calculate_metrics_suite, plot_ue_metrics, update_running_totals
-from device_utils import to_device
+from ue_testing.test_utils import calculate_ue_metrics, calculate_miou, calculate_metrics_suite, plot_ue_metrics, update_running_totals
+from ue_testing.device_utils import to_device
 from datasets.val_datasets import ValDataset
 
 class Tester():
@@ -59,9 +59,12 @@ class Tester():
         self.val_seg_idxs = {}
 
     def _init_logging(self):
+
         if self.opt.use_wandb:
             import wandb
-            wandb.init(project=self.opt.wandb_project, config=self.opt)
+            if wandb.run is None:
+                # only initialise if we don't have a wandb run already
+                wandb.init(project=self.opt.wandb_project, config=self.opt)
             self.vis = None
         else:
             import visdom

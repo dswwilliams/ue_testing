@@ -1,7 +1,7 @@
 import torch
-from device_utils import to_device
 import matplotlib.pyplot as plt 
 import numpy as np
+from ue_testing.device_utils import to_device
 
 
 @torch.no_grad()
@@ -35,6 +35,8 @@ def calculate_ue_metrics(
     ################################################################################################################
 
     accuracy_masks = torch.eq(segmentations, labels).float()        # where segmentations == labels, 1, else 0
+    inaccuracy_masks = 1 - accuracy_masks                           # where segmentations != labels, 1, else 0
+    
     # loop over threshold values
     for threshold_no in range(thresholds.shape[0]):
         ################################################################################################################
@@ -46,9 +48,9 @@ def calculate_ue_metrics(
         ################################################################################################################
         ### calculating uncertainty estimation metrics ###
         n_accurate_and_certain = (accuracy_masks * confidence_masks).sum((1,2))
-        n_inaccurate_and_certain = ((1-accuracy_masks) * confidence_masks).sum((1,2))
+        n_inaccurate_and_certain = (inaccuracy_masks * confidence_masks).sum((1,2))
         n_uncertain_and_accurate = (accuracy_masks * (1-confidence_masks)).sum((1,2))
-        n_uncertain_and_inaccurate = ((1-accuracy_masks) * (1-confidence_masks)).sum((1,2))
+        n_uncertain_and_inaccurate = (inaccuracy_masks * (1-confidence_masks)).sum((1,2))
         
         val_metrics["n_inaccurate_and_certain"][:, threshold_no] = n_inaccurate_and_certain
         val_metrics["n_accurate_and_certain"][:, threshold_no] = n_accurate_and_certain
