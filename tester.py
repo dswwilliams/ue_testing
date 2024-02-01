@@ -62,9 +62,15 @@ class Tester():
         if self.opt.use_wandb:
             import wandb
             wandb.init(project=self.opt.wandb_project, config=self.opt)
+            self.vis = None
         else:
             import visdom
             self.vis = visdom.Visdom(port=8097)
+            envs = set(self.vis.get_env_list())
+            envs.remove("main")
+            for env in envs:
+                self.vis.delete_env(env)
+            self.vis.close()    # clear windows
 
 
     def _init_val_datasets(self):
@@ -93,7 +99,8 @@ class Tester():
         for dataset in self.val_datasets:
             n_val_examples = len(dataset)
             print(dataset.name+" - Num. val examples", n_val_examples)
-
+            if self.vis:
+                self.vis.fork_env("main", dataset.name)
 
     def _init_dataloader(self, val_dataset):
         _batch_size = self.opt.val_batch_size if self.opt.val_batch_size is not None else self.opt.batch_size
@@ -160,7 +167,7 @@ class Tester():
 
         dataloader = self._init_dataloader(val_dataset)
         iterator = tqdm(dataloader)
-        for val_dict in iterator:
+        for step, val_dict in enumerate(iterator):
             val_imgs = to_device(val_dict["img"], self.device)
             val_labels = to_device(val_dict["label"], self.device)
 
@@ -170,13 +177,16 @@ class Tester():
             # update running totals
             update_running_totals(val_metrics_totals, val_metrics_counts, val_metrics_dict)
 
+            if step >= 3:
+                break
+
         # calculate metrics from raw results
         processed_metrics = {}
         for output_name in val_metrics_totals:
             processed_metrics[output_name] = calculate_metrics_suite(val_metrics_totals[output_name], val_metrics_counts[output_name], self.states)
 
         # plot metrics to wandb
-        plot_ue_metrics(processed_metrics, test_count, dataset_name=val_dataset.name, plot_plots=False)
+        plot_ue_metrics(processed_metrics, test_count, dataset_name=val_dataset.name, plot_plots=True, vis=self.vis)
     ######################################################################################################################################################
         
 

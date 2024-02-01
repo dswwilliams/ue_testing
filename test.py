@@ -92,4 +92,4 @@ if __name__ == "__main__":
     tester = Tester(opt, model)
 
     # test model
-    tester.test(model)
+    tester.test()

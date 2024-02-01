@@ -174,84 +174,94 @@ def plot_ue_metrics(processed_metrics, validation_count, dataset_name, plot_plot
     
         if plot_plots:
             fig, ax = plt.subplots()
-            ax.plot(processed_metrics["p_certain"].cpu().numpy(), processed_metrics["acc_md"].cpu().numpy())
+            ax.plot(processed_metrics[output_name]["p_certain"].cpu().numpy(), processed_metrics[output_name]["acc_md"].cpu().numpy())
             ax.set_xlabel("p_certain")
             ax.set_ylabel("A_md")
             if USE_WANDB:
                 wandb.log({f"{output_name} - A_md {dataset_name}/{validation_count}": fig}, commit=False)
             else:
                 vis.line(
-                    Y=processed_metrics["acc_md"].cpu().numpy(), 
-                    X=processed_metrics["p_certain"].cpu().numpy(), 
+                    Y=processed_metrics[output_name]["acc_md"].cpu().numpy(), 
+                    X=processed_metrics[output_name]["p_certain"].cpu().numpy(), 
                     opts=dict(title=f"{output_name} - A_md {dataset_name}/{validation_count}", 
                     win=f"{output_name} - A_md {dataset_name}/{validation_count}",
-                    xlabel='p_certain', ylabel='A_md')
+                    xlabel='p_certain', ylabel='A_md'),
+                    env=dataset_name,
                     )
 
             fig, ax = plt.subplots() 
-            ax.plot(processed_metrics["p_certain"].cpu().numpy(), processed_metrics["fhalf"].cpu().numpy())
+            ax.plot(processed_metrics[output_name]["p_certain"].cpu().numpy(), processed_metrics[output_name]["fhalf"].cpu().numpy())
             ax.set_xlabel("p_certain")
             ax.set_ylabel("F_0.5")
             if USE_WANDB:
                 wandb.log({f"{output_name} - F_0.5 {dataset_name}/{validation_count}": fig}, commit=False)
             else:
                 vis.line(
-                    Y=processed_metrics["fhalf"].cpu().numpy(), 
-                    X=processed_metrics["p_certain"].cpu().numpy(), 
+                    Y=processed_metrics[output_name]["fhalf"].cpu().numpy(), 
+                    X=processed_metrics[output_name]["p_certain"].cpu().numpy(), 
                     opts=dict(title=f"{output_name} - F_0.5 {dataset_name}/{validation_count}", 
                     win=f"{output_name} - F_0.5 {dataset_name}/{validation_count}",
-                    xlabel='p_certain', ylabel='F_0.5')
+                    xlabel='p_certain', ylabel='F_0.5'),
+                    env=dataset_name,
                     )
 
             fig, ax = plt.subplots()
-            ax.plot(processed_metrics["recall"].cpu().numpy(), processed_metrics["precision"].cpu().numpy())
+            ax.plot(processed_metrics[output_name]["recall"].cpu().numpy(), processed_metrics[output_name]["precision"].cpu().numpy())
             ax.set_xlabel("recall")
             ax.set_ylabel("precision")
             if USE_WANDB:
                 wandb.log({f"{output_name} - Precision vs Recall {dataset_name}/{validation_count}": fig}, commit=False)
             else:
                 vis.line(
-                    Y=processed_metrics["precision"].cpu().numpy(), 
-                    X=processed_metrics["recall"].cpu().numpy(), 
+                    Y=processed_metrics[output_name]["precision"].cpu().numpy(), 
+                    X=processed_metrics[output_name]["recall"].cpu().numpy(), 
                     opts=dict(title=f"{output_name} - Precision vs Recall {dataset_name}/{validation_count}", 
                     win=f"{output_name} - Precision vs Recall {dataset_name}/{validation_count}",
-                    xlabel='recall', ylabel='precision')
+                    xlabel='recall', ylabel='precision'),
+                    env=dataset_name,
                     )
 
 
         # plotting aggregated metrics (i.e. single datum per validation step)
         if USE_WANDB:
-            wandb.log({f"{output_name} - {dataset_name}/Max A_md": processed_metrics["acc_md"].max().float().item()}, commit=False)
-            wandb.log({f"{output_name} - {dataset_name}/Max F_0.5": processed_metrics["fhalf"].max().float().item()}, commit=False)
-            wandb.log({f"{output_name} - {dataset_name}/Segmentation Accuracy": processed_metrics["p_accurate"][0].float().item()}, commit=False)
-            wandb.log({f"{output_name} - {dataset_name}/Mean IoU": processed_metrics["miou"][0].float().item()}, commit=False)
+            wandb.log({f"{output_name} - {dataset_name}/Max A_md": processed_metrics[output_name]["acc_md"].max().float().item()}, commit=False)
+            wandb.log({f"{output_name} - {dataset_name}/Max F_0.5": processed_metrics[output_name]["fhalf"].max().float().item()}, commit=False)
+            wandb.log({f"{output_name} - {dataset_name}/Segmentation Accuracy": processed_metrics[output_name]["p_accurate"][0].float().item()}, commit=False)
+            wandb.log({f"{output_name} - {dataset_name}/Mean IoU": processed_metrics[output_name]["miou"][0].float().item()}, commit=False)
         else:
             # add point to existing plot in visdom
             vis.line(
-                Y=np.array([processed_metrics["acc_md"].max().float().item()]), 
+                Y=np.array([processed_metrics[output_name]["acc_md"].max().float().item()]), 
                 X=np.array([validation_count]), 
                 win=f"{output_name} - {dataset_name}/Max A_md", 
-                update='append'
+                opts=dict(title=f"{output_name} - Max A_md {dataset_name}"),
+                update='append',
+                env=dataset_name,
                 )
             vis.line(
-                Y=np.array([processed_metrics["fhalf"].max().float().item()]), 
+                Y=np.array([processed_metrics[output_name]["fhalf"].max().float().item()]), 
                 X=np.array([validation_count]), 
                 win=f"{output_name} - {dataset_name}/Max F_0.5", 
-                update='append'
+                opts=dict(title=f"{output_name} - Max F_0.5 {dataset_name}"),
+                update='append',
+                env=dataset_name,
                 )
             vis.line(
-                Y=np.array([processed_metrics["p_accurate"][0].float().item()]), 
+                Y=np.array([processed_metrics[output_name]["p_accurate"][0].float().item()]), 
                 X=np.array([validation_count]), 
                 win=f"{output_name} - {dataset_name}/Segmentation Accuracy", 
-                update='append'
+                opts=dict(title=f"{output_name} - Segmentation Accuracy {dataset_name}"),
+                update='append',
+                env=dataset_name,
                 )
             vis.line(
-                Y=np.array([processed_metrics["miou"][0].float().item()]), 
+                Y=np.array([processed_metrics[output_name]["miou"][0].float().item()]), 
                 X=np.array([validation_count]), 
                 win=f"{output_name} - {dataset_name}/Mean IoU", 
-                update='append'
+                opts=dict(title=f"{output_name} - Mean IoU {dataset_name}"),
+                update='append',
+                env=dataset_name,
                 )
-            
 
 def update_running_totals(val_metrics_totals, val_metrics_counts, val_metrics_dict):
     for output_name, val_metrics in val_metrics_dict.items():
