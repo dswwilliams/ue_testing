@@ -308,6 +308,6 @@ def validate_batch(
                             num_thresholds=opt.num_thresholds,
                             threshold_type=opt.threshold_type,
                             )
-        num_classes = model.known_class_list
+
         ue_metrics[output_name]["miou"] = calculate_miou(segmentations=output["segs"], labels=val_labels, num_classes=model.num_known_classes)
     return ue_metrics
