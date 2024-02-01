@@ -73,7 +73,6 @@ elif opt.use_cpu:
     opt.wilddash_dataroot = "/Users/dw/data/wilddash"
     opt.sax_raw_dataroot = "/Users/dw/data/sax_raw"
     opt.sax_labelled_dataroot = "/Users/dw/data/sax_labelled"
-    opt.sensor_models_path = "/Users/dw/code/lut/sensor-models"
 # print(opt)
 ########################################################################
 
@@ -92,4 +91,5 @@ if __name__ == "__main__":
     tester = Tester(opt, model)
 
     # test model
-    tester.test()
+    # tester.test()
+    tester.get_qual_results()

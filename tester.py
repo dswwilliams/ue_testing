@@ -6,8 +6,10 @@ import numpy as np
 import cv2
 from collections import defaultdict
 from ue_testing.test_utils import calculate_ue_metrics, calculate_miou, calculate_metrics_suite, plot_ue_metrics, update_running_totals
+from ue_testing.test_utils import init_val_ue_metrics, validate_batch
 from ue_testing.device_utils import to_device
 from datasets.val_datasets import ValDataset
+from colourisation_utils import denormalise, norm_by_ranking, quantize_by_ranking
 
 class Tester():
     """
@@ -127,46 +129,13 @@ class Tester():
         self.device = torch.device(device_id)
 
 
-    @torch.no_grad()
-    def validate_batch(
-                self,
-                val_imgs, 
-                val_labels,
-                opt,
-                ):
-
-        outputs = self.model.get_val_seg_masks(val_imgs)
-
-        # calculate metrics for each model output
-        ue_metrics = {}
-        # for seg, uncertainty_map in zip(segs_K, uncertainty_maps):
-        for output_name, output in outputs.items():
-            ue_metrics[output_name] = calculate_ue_metrics(
-                                segmentations=output["segs"],
-                                labels=val_labels,
-                                uncertainty_maps=output["uncertainty_maps"],
-                                max_uncertainty=opt.max_uncertainty,
-                                num_thresholds=opt.num_thresholds,
-                                threshold_type=opt.threshold_type,
-                                )
-            ue_metrics[output_name]["miou"] = calculate_miou(segmentations=output["segs"], labels=val_labels, num_classes=len(self.known_class_list)+1)
-        return ue_metrics
-
-    def init_val_ue_metrics(self, num_thresholds):
-        metric_names = ["n_inaccurate_and_certain", "n_accurate_and_certain", "n_uncertain_and_accurate", "n_uncertain_and_inaccurate", "miou"]
-
-        # if metrics_totals[output_name], and output_name is not in metrics_totals, then it will return a dict with the keys being the metric names, and the values being zeros
-        metrics_totals = defaultdict(lambda: {metric_name: torch.zeros(num_thresholds) for metric_name in metric_names})
-        metrics_counts = defaultdict(lambda: {metric_name: 0 for metric_name in metric_names})
-
-        return metrics_totals, metrics_counts
 
     @torch.no_grad()
     def validate_uncertainty_estimation(self, val_dataset, test_count=0):
         print(f"\nValidating uncertainty estimation on {val_dataset.name}")
 
         # init running totals
-        val_metrics_totals, val_metrics_counts = self.init_val_ue_metrics(self.opt.num_thresholds)
+        val_metrics_totals, val_metrics_counts = init_val_ue_metrics(self.opt.num_thresholds)
 
         dataloader = self._init_dataloader(val_dataset)
         iterator = tqdm(dataloader)
@@ -175,7 +144,7 @@ class Tester():
             val_labels = to_device(val_dict["label"], self.device)
 
             # calculate ue metrics from batch
-            val_metrics_dict = self.validate_batch(val_imgs, val_labels, self.opt)
+            val_metrics_dict = validate_batch(val_imgs, val_labels, self.model, self.opt)
             
             # update running totals
             update_running_totals(val_metrics_totals, val_metrics_counts, val_metrics_dict)
@@ -192,8 +161,80 @@ class Tester():
         plot_ue_metrics(processed_metrics, test_count, dataset_name=val_dataset.name, plot_plots=True, vis=self.vis)
     ######################################################################################################################################################
         
-
-    def test(self, test_count=0):
+    def get_qual_results(self, test_count=0):
         # validate uncertainty estimation
         for val_dataset in self.val_datasets:
-            self.validate_uncertainty_estimation(val_dataset, test_count=test_count)
+            self.view_qual_results(val_dataset, test_count=test_count)
+
+    @torch.no_grad()
+    # def view_val_segmentations(self, val_dataset, model, training_it_count, masking_model=None):
+    def view_qual_results(self, val_dataset, test_count=0):
+        """
+        - extract and view qualitative segmentation and uncertainty estimation results
+        """
+        dataset_name = val_dataset.name
+
+        print("viewing val segmentations for {}".format(dataset_name))
+
+
+        # creating dataloader
+        self.val_seg_idxs[dataset_name] = [int(idx) for idx in self.val_seg_idxs[dataset_name]]
+        val_dataset = torch.utils.data.Subset(val_dataset, self.val_seg_idxs[dataset_name])
+        _num_workers = 0 if self.opt.num_workers == 0 else 2
+        qual_dataloader = torch.utils.data.DataLoader(
+                                                    dataset=val_dataset, 
+                                                    batch_size=min(self.opt.batch_size, len(val_dataset)), 
+                                                    shuffle=False, 
+                                                    num_workers=_num_workers, 
+                                                    drop_last=False,
+                                                    )
+        iterator = tqdm(qual_dataloader)
+
+        seg_count = 0
+        for _, (val_dict) in enumerate(iterator):
+            val_imgs = to_device(val_dict["img"], self.device)
+            val_labels = to_device(val_dict["label"], self.device)
+
+            """
+            - what are the relevant seg_masks to look at while validating?
+            - i think in the gssl cases, we want to look at query and target seg masks
+            - but if its just a standard segmentation model, we just want to look at "vanilla" seg masks
+            - this is defined in model and get_val_seg_masks
+            """
+
+            seg_outputs = self.model.get_val_seg_masks(val_imgs)
+
+            # reverse image normalisation, ready for viewing
+            val_imgs = denormalise(val_imgs, self.opt.use_imagenet_norm).permute(0,2,3,1).detach().cpu().numpy()    # [bs, h, w, 3]
+            for batch_no in range(val_imgs.shape[0]):
+                # one wandb log per batch item
+                masks_log = {}
+
+                val_img = val_imgs[batch_no]        # [h, w, 3]
+                ground_truth_mask = val_labels[batch_no].detach().cpu().numpy()
+                masks_log["ground_truth"] = {"mask_data": ground_truth_mask, "class_labels": self.class_dict}
+
+                for output_name in seg_outputs:
+                    segs = seg_outputs[output_name]["segs"].detach().cpu().numpy()
+                    seg = segs[batch_no]
+                    uncertainty_maps = seg_outputs[output_name]["uncertainty_maps"]
+
+                    confidences = quantize_by_ranking(1 - uncertainty_maps, n_bins=10).detach().cpu().numpy()
+                    confidence = confidences[batch_no]
+
+
+                    masks_log[f"{output_name}_seg"] = {"mask_data": seg, "class_labels": self.class_dict}
+                    masks_log[f"{output_name}_conf"] = {"mask_data": confidence, "class_labels": {idx : str(idx) for idx in range(10)}}
+            if self.vis:
+                pass
+            else:
+                masked_image = wandb.Image(
+                                    val_img,
+                                    masks=masks_log,
+                                    )
+                wandb.log({f"val_segs {dataset_name}/{seg_count}": masked_image}, commit=False)
+
+                seg_count += 1
+    ######################################################################################################################################################
+        
+

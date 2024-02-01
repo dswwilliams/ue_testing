@@ -1,6 +1,7 @@
 import torch
 import matplotlib.pyplot as plt 
 import numpy as np
+from collections import defaultdict
 from ue_testing.device_utils import to_device
 
 
@@ -273,3 +274,39 @@ def update_running_totals(val_metrics_totals, val_metrics_counts, val_metrics_di
                 val_metrics_counts[output_name][metric_name] += val_metrics[metric_name].shape[0]
             else:
                 val_metrics_counts[output_name][metric_name] += 1
+
+
+def init_val_ue_metrics(num_thresholds):
+    metric_names = ["n_inaccurate_and_certain", "n_accurate_and_certain", "n_uncertain_and_accurate", "n_uncertain_and_inaccurate", "miou"]
+
+    # if metrics_totals[output_name], and output_name is not in metrics_totals, then it will return a dict with the keys being the metric names, and the values being zeros
+    metrics_totals = defaultdict(lambda: {metric_name: torch.zeros(num_thresholds) for metric_name in metric_names})
+    metrics_counts = defaultdict(lambda: {metric_name: 0 for metric_name in metric_names})
+
+    return metrics_totals, metrics_counts
+
+
+@torch.no_grad()
+def validate_batch(
+            val_imgs, 
+            val_labels,
+            model,
+            opt,
+            ):
+
+    outputs = model.get_val_seg_masks(val_imgs)
+
+    # calculate metrics for each model output
+    ue_metrics = {}
+    # for seg, uncertainty_map in zip(segs_K, uncertainty_maps):
+    for output_name, output in outputs.items():
+        ue_metrics[output_name] = calculate_ue_metrics(
+                            segmentations=output["segs"],
+                            labels=val_labels,
+                            uncertainty_maps=output["uncertainty_maps"],
+                            max_uncertainty=opt.max_uncertainty,
+                            num_thresholds=opt.num_thresholds,
+                            threshold_type=opt.threshold_type,
+                            )
+        ue_metrics[output_name]["miou"] = calculate_miou(segmentations=output["segs"], labels=val_labels, num_classes=len(self.known_class_list)+1)
+    return ue_metrics
