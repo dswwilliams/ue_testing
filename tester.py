@@ -9,7 +9,7 @@ from ue_testing.test_utils import calculate_ue_metrics, calculate_miou, calculat
 from ue_testing.test_utils import init_val_ue_metrics, validate_batch
 from ue_testing.device_utils import to_device
 from datasets.val_datasets import ValDataset
-from colourisation_utils import denormalise, norm_by_ranking, quantize_by_ranking
+from ue_testing.colourisation_utils import denormalise, norm_by_ranking, quantize_by_ranking
 
 class Tester():
     """
