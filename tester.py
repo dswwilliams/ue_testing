@@ -58,12 +58,11 @@ class Tester():
             self.class_labels.append("void")
         self.class_dict = {class_idx:class_label  for class_idx, class_label in enumerate(self.class_labels)}
 
-        self.val_seg_idxs = {}
-
     def _init_logging(self):
 
         if self.opt.use_wandb:
             import wandb
+            globals()["wandb"] = wandb
             if wandb.run is None:
                 # only initialise if we don't have a wandb run already
                 wandb.init(project=self.opt.wandb_project, config=self.opt)
@@ -161,14 +160,14 @@ class Tester():
         plot_ue_metrics(processed_metrics, test_count, dataset_name=val_dataset.name, plot_plots=True, vis=self.vis)
     ######################################################################################################################################################
         
-    def get_qual_results(self, test_count=0):
+    def get_qual_results(self):
         # validate uncertainty estimation
         for val_dataset in self.val_datasets:
-            self.view_qual_results(val_dataset, test_count=test_count)
+            self.view_qual_results(val_dataset)
 
     @torch.no_grad()
     # def view_val_segmentations(self, val_dataset, model, training_it_count, masking_model=None):
-    def view_qual_results(self, val_dataset, test_count=0):
+    def view_qual_results(self, val_dataset):
         """
         - extract and view qualitative segmentation and uncertainty estimation results
         """
