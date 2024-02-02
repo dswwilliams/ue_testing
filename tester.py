@@ -4,6 +4,7 @@ import torch.nn.functional as F
 from tqdm import tqdm
 import numpy as np
 import cv2
+import time
 from collections import defaultdict
 from ue_testing.test_utils import calculate_ue_metrics, calculate_miou, calculate_metrics_suite, plot_ue_metrics, update_running_totals
 from ue_testing.test_utils import init_val_ue_metrics, validate_batch
@@ -131,7 +132,9 @@ class Tester():
     def test(self, test_count=0):
         # validate uncertainty estimation
         for val_dataset in self.val_datasets:
+            start_time = time.time()
             self.validate_uncertainty_estimation(val_dataset, test_count=test_count)
+            print(f"time to validate uncertainty estimation for {val_dataset.name}: {time.time() - start_time} seconds")
 
 
     @torch.no_grad()
@@ -148,27 +151,37 @@ class Tester():
             val_labels = to_device(val_dict["label"], self.device)
 
             # calculate ue metrics from batch
+            start_time = time.time()
             val_metrics_dict = validate_batch(val_imgs, val_labels, self.model, self.opt)
+            print(f"time to validate batch: {time.time() - start_time} seconds")
             
             # update running totals
+            start_time = time.time()
             update_running_totals(val_metrics_totals, val_metrics_counts, val_metrics_dict)
+            print(f"time to update running totals: {time.time() - start_time} seconds")
 
             if step >= 3:
                 break
 
         # calculate metrics from raw results
+        start_time = time.time()
         processed_metrics = {}
         for output_name in val_metrics_totals:
             processed_metrics[output_name] = calculate_metrics_suite(val_metrics_totals[output_name], val_metrics_counts[output_name], self.states)
+        print(f"time to calculate metrics from raw results: {time.time() - start_time} seconds")
 
         # plot metrics to wandb
+        start_time = time.time()
         plot_ue_metrics(processed_metrics, test_count, dataset_name=val_dataset.name, plot_plots=True, vis=self.vis)
+        print(f"time to plot metrics to wandb: {time.time() - start_time} seconds")
     ######################################################################################################################################################
         
     def get_qual_results(self):
         # validate uncertainty estimation
         for val_dataset in self.val_datasets:
+            start_time = time.time()
             self.view_qual_results(val_dataset)
+            print(f"time to get qual results for {val_dataset.name}: {time.time() - start_time} seconds")
 
     @torch.no_grad()
     # def view_val_segmentations(self, val_dataset, model, training_it_count, masking_model=None):
@@ -195,6 +208,7 @@ class Tester():
         iterator = tqdm(qual_dataloader)
 
         seg_count = 0
+        st1 = time.time()
         for _, (val_dict) in enumerate(iterator):
             val_imgs = to_device(val_dict["img"], self.device)
             val_labels = to_device(val_dict["label"], self.device)
@@ -205,10 +219,12 @@ class Tester():
             - but if its just a standard segmentation model, we just want to look at "vanilla" seg masks
             - this is defined in model and get_val_seg_masks
             """
-
+            st2 = time.time()
             seg_outputs = self.model.get_val_seg_masks(val_imgs)
+            print(f"time to get val seg masks for qual val: {time.time() - st2} seconds")
 
             # reverse image normalisation, ready for viewing
+            st3 = time.time()
             val_imgs = denormalise(val_imgs, self.opt.use_imagenet_norm).permute(0,2,3,1).detach().cpu().numpy()    # [bs, h, w, 3]
             for batch_no in range(val_imgs.shape[0]):
                 # one wandb log per batch item
@@ -229,6 +245,7 @@ class Tester():
 
                     masks_log[f"{output_name}_seg"] = {"mask_data": seg, "class_labels": self.class_dict}
                     masks_log[f"{output_name}_conf"] = {"mask_data": confidence, "class_labels": {idx : str(idx) for idx in range(10)}}
+            print(f"time to process for qual val: {time.time() - st3} seconds")
             if self.vis:
                 pass
             else:
@@ -239,6 +256,7 @@ class Tester():
                 wandb.log({f"val_segs {dataset_name}/{seg_count}": masked_image}, commit=False)
 
                 seg_count += 1
+        print(f"time to get loop to get qual val: {time.time() - st1} seconds")
     ######################################################################################################################################################
         
 

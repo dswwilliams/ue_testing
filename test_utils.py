@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from collections import defaultdict
 from ue_testing.device_utils import to_device
-
+import time
 
 @torch.no_grad()
 def calculate_ue_metrics(
@@ -294,9 +294,12 @@ def validate_batch(
             opt,
             ):
 
+    start_time = time.time()
     outputs = model.get_val_seg_masks(val_imgs)
+    print(f"Time taken to get val seg masks: {time.time() - start_time}")
 
     # calculate metrics for each model output
+    start_time = time.time()
     ue_metrics = {}
     # for seg, uncertainty_map in zip(segs_K, uncertainty_maps):
     for output_name, output in outputs.items():
@@ -310,4 +313,5 @@ def validate_batch(
                             )
 
         ue_metrics[output_name]["miou"] = calculate_miou(segmentations=output["segs"], labels=val_labels, num_classes=model.num_known_classes)
+    print(f"Time taken to calculate metrics in validate_batch: {time.time() - start_time}")
     return ue_metrics
