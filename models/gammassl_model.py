@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from utils.device_utils import to_device
-from utils.crop_utils import crop_by_box_and_resize
+from utils.candr_utils import crop_by_box_and_resize
 from utils.downsampling_utils import ClassWeightedModalDownSampler
 from tqdm import tqdm
 import numpy as np
