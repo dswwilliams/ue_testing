@@ -15,9 +15,6 @@ sys.path.append("../")
 class GammaSSLModel(nn.Module):
     """
     class that deals with defining and updating: neural networks, prototypes and gamma 
-    
-    TODO: make sure that the methods in this class are generic to any defined model, i.e. vit or resnet
-          i.e. they call generic functions from the self.seg_net
     """
     
     ##########################################################################################################################################################

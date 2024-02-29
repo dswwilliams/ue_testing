@@ -40,9 +40,7 @@ parser.add_argument('--gamma_temp', type=float, default=0.1, help="if gamma_scal
 
 
 # ======================== Validation Options ========================
-# TODO
 parser.add_argument('--output_rank_metrics', type=str2bool, default=False, help="normalise uncertainty metric by rank")
-# TODO
 parser.add_argument('--val_transforms', type=str2bool, default=False, help="whether to colour-transform val images")
 parser.add_argument('--model_type', type=str, default="fake")
 parser.add_argument('--val_batch_size', type=int, default=None)
