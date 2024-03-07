@@ -37,7 +37,8 @@ class CityscapesxBDDDataset(torch.utils.data.Dataset):
                         ):
 
         self.crop_size = crop_size
-        self.identity_crop_box = torch.tensor([[0,0], [self.crop_size-1, 0], [self.crop_size-1, self.crop_size-1], [0, self.crop_size-1]])
+        self.identity_crop_box = torch.tensor([[0,0], [self.crop_size-1, 0], 
+                                            [self.crop_size-1, self.crop_size-1], [0, self.crop_size-1]])
         self.downsample_factor = DOWNSAMPLE_FACTOR
         self.resize_noise_factor = RESIZE_NOISE_FACTOR
         self.use_imagenet_norm = use_imagenet_norm
