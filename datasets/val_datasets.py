@@ -1,7 +1,7 @@
 import os
 import cv2
 import torch
-from dataset_utils import central_crop_img, get_img_size_from_aspect_ratio, ImgColourTransform
+from utils.dataset_utils import central_crop_img, get_img_size_from_aspect_ratio, ImgColourTransform, normalize_img
 
 cityscapes_train_dirs = ["train/jena/", "train/zurich/", "train/weimar/", "train/ulm/", "train/tubingen/", "train/stuttgart/",
               "train/strasbourg/", "train/monchengladbach/", "train/krefeld/", "train/hanover/",
@@ -11,25 +11,10 @@ cityscapes_val_dirs = ["val/frankfurt/", "val/munster/", "val/lindau/"]
 cityscapes_test_dirs = ["test/berlin/", "test/bielefeld/", "test/bonn/", "test/leverkusen/", "test/mainz/", "test/munich/"]
 
 
-def normalize_img(img, imagenet=False):
-    if imagenet:
-        # normalize the img (with the mean and std for the pretrained ResNet):
-        if (img > 2).any():
-            img = img/255.0
-        img = img - torch.tensor([0.485, 0.456, 0.406]).unsqueeze(1).unsqueeze(2)
-        img = img/torch.tensor([0.229, 0.224, 0.225]).unsqueeze(1).unsqueeze(2) # (shape: (256, 256, 3))
-        img = img.float()
-    else:
-        # normalize the img (with the mean and std for the pretrained ResNet):
-        if (img > 2).any():
-            img = img/255.0
-        # [0,1] -> [-1, 1]
-        img = (img - 0.5) * 2
-        img = img.float()
-    return img
-
-
 def get_preprocessed_data(example, imagenet_norm, resize_sizes, crop_sizes, colour_transform=None, patch_size=None):
+    """
+    Reads in and preprocesses the image and label image.
+    """
     img = cv2.cvtColor(cv2.imread(example["img_path"]), cv2.COLOR_BGR2RGB)
     label_img = cv2.imread(example["label_path"], cv2.IMREAD_GRAYSCALE)
 
@@ -43,6 +28,7 @@ def get_preprocessed_data(example, imagenet_norm, resize_sizes, crop_sizes, colo
     ### converting numpy -> torch ###
     img = torch.from_numpy(img) 
     img = img.permute(2,0,1).float()/255
+
     if colour_transform is not None:
         img = colour_transform(img)
     img = normalize_img(img, imagenet=imagenet_norm)
@@ -86,6 +72,12 @@ def get_bdd_examples(dataroot):
 
 
 class ValDataset(torch.utils.data.Dataset):
+    """
+    Validation dataset, which can be used for Cityscapes or BDD.
+
+    Returns:
+        output (dict): containing the image and label image.
+    """
     def __init__(self, name, dataroot, use_imagenet_norm, val_transforms=False, patch_size=None):
         
         self.name = name
@@ -101,13 +93,11 @@ class ValDataset(torch.utils.data.Dataset):
 
         self.imagenet_norm = use_imagenet_norm
         self.patch_size = patch_size
-        # resize_sizes are intermediate, crop_sizes are the final size
+
+        # get intermediate (resize_sizes) and final (crop_sizes) image sizes
         self.resize_sizes, self.crop_sizes = get_img_size_from_aspect_ratio(self.aspect_ratio, patch_size=self.patch_size)
 
-        if val_transforms:
-            self.colour_transform = ImgColourTransform(n_seq_transforms=1)
-        else:
-            self.colour_transform = None
+        self.colour_transform = ImgColourTransform(n_seq_transforms=1) if val_transforms else None
 
         self.num_examples = len(self.examples)
 
