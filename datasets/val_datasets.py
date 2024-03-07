@@ -1,7 +1,7 @@
 import os
 import cv2
 import torch
-from utils.dataset_utils import central_crop_img, get_img_size_from_aspect_ratio, ImgColourTransform, normalize_img
+from ue_testing.utils.dataset_utils import central_crop_img, get_img_size_from_aspect_ratio, ImgColourTransform, normalize_img
 
 cityscapes_train_dirs = ["train/jena/", "train/zurich/", "train/weimar/", "train/ulm/", "train/tubingen/", "train/stuttgart/",
               "train/strasbourg/", "train/monchengladbach/", "train/krefeld/", "train/hanover/",

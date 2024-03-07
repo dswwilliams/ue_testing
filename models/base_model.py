@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import sys
 sys.path.append("../")
-from utils.device_utils import init_device
+from ue_testing.utils.device_utils import init_device
 
 
 class BaseModel(nn.Module):

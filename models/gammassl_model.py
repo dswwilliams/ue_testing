@@ -5,10 +5,10 @@ from tqdm import tqdm
 import copy
 import sys
 sys.path.append("../")
-from utils.prototype_utils import extract_prototypes, segment_via_prototypes
-from utils.disk_utils import load_checkpoint_if_exists
-from utils.downsampling_utils import ClassWeightedModalDownSampler, downsample_labels
-from models.base_model import BaseModel
+from ue_testing.utils.prototype_utils import extract_prototypes, segment_via_prototypes
+from ue_testing.utils.disk_utils import load_checkpoint_if_exists
+from ue_testing.utils.downsampling_utils import ClassWeightedModalDownSampler, downsample_labels
+from ue_testing.models.base_model import BaseModel
 
 class GammaSSLModel(BaseModel):
     """
@@ -112,7 +112,7 @@ class GammaSSLModel(BaseModel):
         if self.opt.prototypes_path is not None:
             print("loading prototypes from ->", self.opt.prototypes_path)
             if self.opt.prototypes_path[-4:] == ".pkl":
-                from utils.prototype_utils import load_prototypes_from_pkl
+                from ue_testing.utils.prototype_utils import load_prototypes_from_pkl
                 self.dataset_prototypes = load_prototypes_from_pkl(self.opt.prototypes_path, self.device)
             else:
                 checkpoint = torch.load(self.opt.prototypes_path, map_location=self.device)

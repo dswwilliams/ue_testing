@@ -4,8 +4,8 @@ import os
 import sys
 import cv2
 sys.path.append("../")
-from utils.dataset_utils import get_initial_scaling_values, random_flip, normalize_img, ImgColourTransform
-from utils.dataset_utils import get_random_crop, resize_data, get_resize_noise
+from ue_testing.utils.dataset_utils import get_initial_scaling_values, random_flip, normalize_img, ImgColourTransform
+from ue_testing.utils.dataset_utils import get_random_crop, resize_data, get_resize_noise
 
 cityscapes_train_dirs = ["train/jena/", "train/zurich/", "train/weimar/", "train/ulm/", "train/tubingen/", "train/stuttgart/",
               "train/strasbourg/", "train/monchengladbach/", "train/krefeld/", "train/hanover/",

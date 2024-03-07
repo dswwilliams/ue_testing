@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt 
 import numpy as np
 from collections import defaultdict
-from utils.device_utils import to_device
+from ue_testing.utils.device_utils import to_device
 
 def str2bool(v):
   return v.lower() in ("yes", "true", "t", "1")

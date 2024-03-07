@@ -4,7 +4,7 @@ import argparse
 import socket
 sys.path.append("../")
 from tester import Tester
-from utils.test_utils import str2bool
+from ue_testing.utils.test_utils import str2bool
 torch.set_printoptions(sci_mode=False, linewidth=200)
 
 
