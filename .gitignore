@@ -11,3 +11,4 @@ runs/
 wandb/
 */wandb/
 */training/wandb
+checkpoints/
