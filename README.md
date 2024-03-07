@@ -1,21 +1,35 @@
 
-What's the objective for the ue_testing repo? 
+### Overview
 
-- It needs to define a model
-- Then pass the model and options to instantiate a Tester class
-- Then we just need to call methods in the tester class
+Repo for testing the quality of a segmentation network's uncertainty estimation.
 
-- so the main issue is defining the options and the model
+Used the following projects:
 
-- these should be stripped down versions of the training ones
-- i.e. the model class should have as few methods as possible
-- there should be as few options as possible
+[“Mitigating Distributional Shift in Semantic Segmentation via Uncertainty Estimation from Unlabelled Data”, D. Williams, D. De Martini, M. Gadd, and P. Newman, IEEE Transactions on Robotics (T-RO), 2024](https://arxiv.org/abs/2402.17653)
+<!-- TODO: link this to my personal website not arxiv -->
+```
+@article{gammassl,
+title={{Mitigating Distributional Shift in Semantic Segmentation via Uncertainty Estimation from Unlabelled Data}},
+author={Williams, David and De Martini, Daniele and Gadd, Matthew and Newman, Paul},
+booktitle={IEEE Transactions on Robotics (T-RO)},
+year={2024},
+}
+```
 
+[“Masked Gamma-SSL: Learning Uncertainty Estimation via Masked Image Modeling”, D. Williams, M. Gadd, P. Newman, and D. De Martini, IEEE International Conference on Robotics and Automation (ICRA), 2024](https://arxiv.org/abs/2402.17622)
+<!-- TODO: link this to my personal website not arxiv -->
+```
+@article{maskedgammassl,
+title={{Masked Gamma-SSL: Learning Uncertainty Estimation via Masked Image Modeling}},
+author={Williams, David and Gadd, Matthew and Newman, Paul and De Martini, Daniele},
+booktitle={IEEE International Conference on Robotics and Automation (ICRA)},
+year={2024},
+}
+```
 
-
-- we want to be able to define any model in a class and test it, i.e.:
-    1. we need to init the network
-
-
-- Need to implement ensembles and mcd at the very least as models
-- 
+### Environment
+The required conda environment can be setup with:
+```
+conda env create -f environment.yml
+conda activate gammassl
+```
