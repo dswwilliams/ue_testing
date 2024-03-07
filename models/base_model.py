@@ -1,42 +1,37 @@
 import torch
 import torch.nn as nn
+import sys
+sys.path.append("../")
+from utils.device_utils import init_device
 
 
-
-class BaseModel():
-    def __init__(self, *args, **kwargs):
-
-        self.patch_size = None
-                
-        self._init_device()
-        self._init_seg_net()
-
-    def _init_device(self):
-        # if available (and not overwridden by opt.use_cpu) use GPU, else use CPU
-        if torch.cuda.is_available() and self.opt.use_cpu == False:
-            device_id = "cuda:" + self.opt.gpu_no
+class BaseModel(nn.Module):
+    """
+    Base class for all models.
+    Need to implement init_seg_net and get_val_seg_masks.
+    i.e. how to init the segmentation network and how to get segmentation masks and per-pixel uncertainties for testing.
+    """
+    def __init__(self, opt, known_class_list):
+        super().__init__()
+        if known_class_list is None:
+            # use cityscapes as default
+            self.known_class_list = ["road", "sidewalk", "building", "wall", "fence", "pole", 
+                                "traffic_light", "traffic_sign", "vegetation", "terrain", 
+                                "sky", "person", "rider", "car", "truck", "bus", "train", 
+                                "motorcycle", "bicycle"]
         else:
-            device_id = "cpu"
-        
-        self.device = torch.device(device_id)
+            self.known_class_list = known_class_list
 
-    def _init_seg_net(self):
-        self.seg_net = None
-        raise NotImplementedError
-    
-    def model_to_train(self):
-        self.seg_net.train()
+        self.opt = opt
+        self.num_known_classes = len(self.known_class_list)
+        self.device = init_device(gpu_no=self.opt.gpu_no, use_cpu=self.opt.use_cpu)
 
-    def model_to_eval(self):
-        self.seg_net.eval()
+    def init_seg_net(self):
+        """ Initialise segmentation network and load checkpoint if it exists. """
+        return NotImplementedError
 
-    def get_seg_masks(self, imgs):
-        raise NotImplementedError
-    
     def get_val_seg_masks(self, imgs):
-        raise NotImplementedError
-
-
-if __name__ == "__main__":
+        """ Get segmentation masks and uncertainty estimates for testing. """
+        return NotImplementedError
     
-    model = BaseModel(device="cpu")
+
